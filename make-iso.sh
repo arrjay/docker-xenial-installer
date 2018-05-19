@@ -87,7 +87,7 @@ docker export newfs | tar xf - -C "${scratch}" '--exclude=dev/*' '--exclude=var/
   '--exclude=bin/localedef'  '--exclude=sbin/build-locale-archive' '--exclude=usr/share/i18n' \
   '--exclude=usr/share/man'  '--exclude=usr/share/doc' '--exclude=usr/share/info' '--exclude=usr/share/gnome/help' \
   '--exclude=usr/share/cracklib' '--exclude=var/cache/yum' '--exclude=sbin/sln' '--exclude=var/cache/ldconfig' \
-  '--exclude=var/cache/apt/archives'
+  '--exclude=var/cache/apt/archives' '--exclude=var/lib/apt/lists'
 
 docker rm newfs
 

@@ -8,3 +8,5 @@ RUN ln -s /etc/systemd/system/addcons.service /etc/systemd/system/multi-user.tar
 ADD pam-login /etc/pam.d/login
 
 ADD scripts /scripts
+
+RUN rm -rf /var/lib/apt/lists/*
