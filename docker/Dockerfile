@@ -1,0 +1,10 @@
+FROM sandbox.docker.palantir.build/rbergeron/xenial-bootable
+
+ADD all-console-setup/addcons.service /etc/systemd/system/addcons.service
+ADD all-console-setup/startcons.sh    /usr/local/sbin/startcons.sh
+
+RUN ln -s /etc/systemd/system/addcons.service /etc/systemd/system/multi-user.target.wants/addcons.service
+
+ADD pam-login /etc/pam.d/login
+
+ADD scripts /scripts
