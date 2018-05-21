@@ -2,7 +2,7 @@
 
 set -ex
 
-docker run -i --name newfs test bash -exs << _EOF_
+docker run -i --name newfs build bash -exs << _EOF_
 export TERM=dumb
 
 cat << _THERE_ > /etc/fstab.sys
@@ -10,6 +10,7 @@ tmpfs   /var            tmpfs   size=256m       0 0
 tmpfs   /tmp            tmpfs   size=64m        0 0
 tmpfs   /etc/ssh        tmpfs   size=1m         0 0
 tmpfs	/mnt		tmpfs	size=1m		0 0
+tmpfs   /home           tmpfs   size=128m       0 0
 _THERE_
 cat << _THERE_ > /etc/fstab
 /var/hostname /etc/hostname none bind 0 0
@@ -43,9 +44,10 @@ cat << _THERE_ > /usr/lib/dracut/modules.d/50livecd/instantiate-fs.sh
 
 type unpack_archive > /dev/null 2>&1 || . /lib/img-lib.sh
 
-unpack_archive /sysroot/var.tar.xz /sysroot/var
-unpack_archive /sysroot/tmp.tar.xz /sysroot/tmp
-unpack_archive /sysroot/ssh.tar.xz /sysroot/etc/ssh
+unpack_archive /sysroot/var.tar.xz  /sysroot/var
+unpack_archive /sysroot/tmp.tar.xz  /sysroot/tmp
+unpack_archive /sysroot/ssh.tar.xz  /sysroot/etc/ssh
+unpack_archive /sysroot/home.tar.xz /sysroot/home
 _THERE_
 cat << _THERE_ > /usr/lib/dracut/modules.d/50livecd/module-setup.sh
 #!/bin/sh
@@ -64,6 +66,31 @@ cat << _THERE_ > /etc/tmpfiles.d/livecd.conf
 d /var/run/apparmor-cache 0755 root - - -
 _THERE_
 
+sed -i -e '/ - apt-.*/d' /etc/cloud/cloud.cfg
+cat << _THERE_ > /etc/cloud/cloud.cfg.d/90-disable-rootrsz.cfg
+resize_rootfs: false
+growpart:
+  mode: off
+_THERE_
+
+cat << _THERE_ > /etc/cloud/cloud.cfg.d/90-setup-login.cfg
+users:
+  - name: ejusdem
+    lock_passwd: false
+_THERE_
+
+groupadd -g 1024 ejusdem
+useradd --uid 1024 --gid 1024 ejusdem
+usermod -G sudo ejusdem
+mkdir /home/ejusdem
+chown 1024:1024 /home/ejusdem
+
+autosudo=\$(mktemp)
+printf '#!/bin/bash\nsed -i -e "s@^%%sudo.*@%%sudo ALL=(ALL:ALL) NOPASSWD: ALL@" \${2}' > "\${autosudo}"
+chmod +x "\${autosudo}"
+EDITOR="\${autosudo}" visudo
+rm "\${autosudo}"
+
 ln -sf /dev/null /etc/tmpfiles.d/home.conf
 rm -rf /etc/apparmor.d/cache && ln -sf /var/run/apparmor-cache /etc/apparmor.d/cache
 
@@ -75,9 +102,10 @@ done
 
 touch /var/hostname
 
-tar cpf var.tar -C /var .
-tar cpf tmp.tar -C /tmp .
-tar cpf ssh.tar -C /etc/ssh '--exclude=ssh_host*' .
+tar cpf var.tar  -C /var .
+tar cpf tmp.tar  -C /tmp .
+tar cpf home.tar -C /home .
+tar cpf ssh.tar  -C /etc/ssh '--exclude=ssh_host*' .
 
 ln -sf "../proc/self/mounts" "/etc/mtab"
 _EOF_
@@ -88,6 +116,7 @@ isolinux=$(mktemp -d /var/tmp/isolinux.XXXXXX)
 cp /usr/share/syslinux/*.c32 /usr/share/syslinux/isolinux.bin /usr/share/syslinux/isohd*.bin "${isolinux}"
 
 docker export newfs | tar xf - -C "${scratch}" '--exclude=dev/*' '--exclude=var/*' '--exclude=tmp/*' '--exclude=etc/ssh/*' \
+  '--exclude=home/*' \
   '--exclude=usr/lib/locale' '--exclude=usr/share/locale' '--exclude=lib/gconv' '--exclude=lib64/gconv' \
   '--exclude=bin/localedef'  '--exclude=sbin/build-locale-archive' '--exclude=usr/share/i18n' \
   '--exclude=usr/share/man'  '--exclude=usr/share/doc' '--exclude=usr/share/info' '--exclude=usr/share/gnome/help' \
@@ -99,6 +128,7 @@ docker rm newfs
 pxz "${scratch}/var.tar"
 pxz "${scratch}/tmp.tar"
 pxz "${scratch}/ssh.tar"
+pxz "${scratch}/home.tar"
 
 cp -R "${scratch}/boot" "${isolinux}/boot"
 
@@ -129,7 +159,8 @@ xorriso --report_about HINT -as xorrisofs -U -A xe_installer -V xe_installer -vo
   -b isolinux/isolinux.bin -c boot/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table \
   -isohybrid-mbr "${scratch}/isolinux/isohdpfx.bin" --protective-msdos-label "${scratch}" \
   -eltorito-alt-boot -e /boot/efiboot.img -no-emul-boot -isohybrid-gpt-basdat \
-  -eltorito-alt-boot -e /boot/macboot.img -no-emul-boot -isohybrid-gpt-basdat -isohybrid-apm-hfsplus
+  -eltorito-alt-boot -e /boot/macboot.img -no-emul-boot -isohybrid-gpt-basdat -isohybrid-apm-hfsplus -- \
+  -chmodi u+s /usr/bin/sudo
 
 isohybrid installercore.iso
 

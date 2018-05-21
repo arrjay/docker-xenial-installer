@@ -1,4 +1,4 @@
-FROM sandbox.docker.palantir.build/rbergeron/xenial-bootable
+FROM docker.io/redjays/xenial-bootable
 
 ADD all-console-setup/addcons.service /etc/systemd/system/addcons.service
 ADD all-console-setup/startcons.sh    /usr/local/sbin/startcons.sh
