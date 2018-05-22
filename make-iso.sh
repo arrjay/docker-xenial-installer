@@ -73,24 +73,6 @@ growpart:
   mode: off
 _THERE_
 
-cat << _THERE_ > /etc/cloud/cloud.cfg.d/90-setup-login.cfg
-users:
-  - name: ejusdem
-    lock_passwd: false
-_THERE_
-
-groupadd -g 1024 ejusdem
-useradd --uid 1024 --gid 1024 ejusdem
-usermod -G sudo ejusdem
-mkdir /home/ejusdem
-chown 1024:1024 /home/ejusdem
-
-autosudo=\$(mktemp)
-printf '#!/bin/bash\nsed -i -e "s@^%%sudo.*@%%sudo ALL=(ALL:ALL) NOPASSWD: ALL@" \${2}' > "\${autosudo}"
-chmod +x "\${autosudo}"
-EDITOR="\${autosudo}" visudo
-rm "\${autosudo}"
-
 ln -sf /dev/null /etc/tmpfiles.d/home.conf
 rm -rf /etc/apparmor.d/cache && ln -sf /var/run/apparmor-cache /etc/apparmor.d/cache
 
