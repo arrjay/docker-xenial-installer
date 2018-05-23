@@ -6,7 +6,9 @@ RUN dpkg-divert --rename /usr/sbin/update-grub && ln -s /bin/true /usr/sbin/upda
     env LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get -q -y purge apparmor && \
     env LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get -q -y install selinux && \
     rm /usr/sbin/update-grub && dpkg-divert --rename --remove /usr/sbin/update-grub && \
-    rm /usr/sbin/update-selinux-policy && dpkg-divert --rename --remove /usr/sbin/update-selinux-policy
+    rm /usr/sbin/update-selinux-policy && dpkg-divert --rename --remove /usr/sbin/update-selinux-policy && \
+    touch /etc/selinux/ubuntu/contexts/files/file_contexts.local && update-selinux-policy && \
+    rm /.autorelabel
 
 # service to start a console on _any_ serial port
 ADD all-console-setup/addcons.service /etc/systemd/system/addcons.service
@@ -47,7 +49,7 @@ ADD fstab /etc/fstab
 RUN touch /var/hostname
 
 # regenerate initrd finally
-RUN bash -c 'for i in /boot/initrd.img* ; do v="${i#/boot/initrd.img-}" ; dracut -f "${i}" "${v}" ; done'
+RUN bash -c 'for i in /boot/initrd.img* ; do v="${i#/boot/initrd.img-}" ; dracut -vf "${i}" "${v}" ; done'
 
 # pack and remove r/w dirs
 RUN tar cpf var.tar  -C /var .  && \

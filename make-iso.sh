@@ -36,11 +36,11 @@ _EOF_
 
 cat "${scratch}/isolinux/syslinux.cfg.tpl"
 
-sed -e 's/console=tty0/console=ttyS1,115200/g' \
+sed -e 's/console=tty0/console=ttyS1,115200 security=selinux selinux=1 enforcing=0/g' \
     -e 's/root=UNSET/root=LABEL=xe_installer/g' \
       "${scratch}/isolinux/syslinux.cfg.tpl" >> "${isolinux}/syslinux.cfg"
 
-sed -e 's/console=tty0/console=ttyS1,115200/g' \
+sed -e 's/console=tty0/console=ttyS1,115200 security=selinux selinux=1 enforcing=0/g' \
     -e 's/root=UNSET/root=LABEL=xe_installer/g' \
       "${scratch}/boot/grub/grub.cfg.tpl" >> "${scratch}/boot/grub/grub.cfg"
 
