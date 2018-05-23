@@ -1,0 +1,2 @@
+KERNEL=="sr*", IMPORT{program}="/sbin/blkid -o udev -p -u noraid $tempnode"
+ENV{ID_FS_USAGE}=="filesystem|other", ENV{ID_FS_LABEL_ENC}=="?*", SYMLINK+="disk/by-label/$env{ID_FS_LABEL_ENC}"
