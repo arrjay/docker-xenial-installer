@@ -48,6 +48,3 @@ RUN tar cpf var.tar  -C /var .  && \
     tar cpf ssh.tar  -C /etc/ssh '--exclude=ssh_host*' . && \
     rm -rf /var /tmp /home /etc/ssh && \
     mkdir /var /tmp /home /etc/ssh
-
-# replace mtab
-RUN ln -sf "../proc/self/mounts" "/etc/mtab"

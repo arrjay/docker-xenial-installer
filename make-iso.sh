@@ -24,12 +24,14 @@ pxz "${scratch}/tmp.tar"
 pxz "${scratch}/ssh.tar"
 pxz "${scratch}/home.tar"
 
+ln -sf "../proc/self/mounts" "${scratch}/etc/mtab"
+
 cp -R "${scratch}/boot" "${isolinux}/boot"
 
 cat << _EOF_ > "${isolinux}/syslinux.cfg"
 serial 1 115200
+timeout 900
 prompt 1
-timeout 3600
 _EOF_
 
 cat "${scratch}/isolinux/syslinux.cfg.tpl"
