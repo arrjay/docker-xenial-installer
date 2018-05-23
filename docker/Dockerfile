@@ -1,5 +1,13 @@
 FROM xenial-bootable
 
+# install selinux for writing rh images
+RUN dpkg-divert --rename /usr/sbin/update-grub && ln -s /bin/true /usr/sbin/update-grub && \
+    dpkg-divert --rename /usr/sbin/update-selinux-policy && ln -s /bin/true /usr/sbin/update-selinux-policy && \
+    env LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get -q -y purge apparmor && \
+    env LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get -q -y install selinux && \
+    rm /usr/sbin/update-grub && dpkg-divert --rename --remove /usr/sbin/update-grub && \
+    rm /usr/sbin/update-selinux-policy && dpkg-divert --rename --remove /usr/sbin/update-selinux-policy
+
 # service to start a console on _any_ serial port
 ADD all-console-setup/addcons.service /etc/systemd/system/addcons.service
 ADD all-console-setup/startcons.sh    /usr/local/sbin/startcons.sh

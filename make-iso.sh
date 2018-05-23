@@ -56,7 +56,9 @@ xorriso --report_about HINT -as xorrisofs -U -A xe_installer -V xe_installer -vo
   -isohybrid-mbr "${scratch}/isolinux/isohdpfx.bin" --protective-msdos-label "${scratch}" \
   -eltorito-alt-boot -e /boot/efiboot.img -no-emul-boot -isohybrid-gpt-basdat \
   -eltorito-alt-boot -e /boot/macboot.img -no-emul-boot -isohybrid-gpt-basdat -isohybrid-apm-hfsplus -- \
-  -chmodi u+s /usr/bin/sudo
+  -chmodi u+s /usr/bin/sudo -- \
+
+#  -find / -not -path /isolinux -exec set_filter --zisofs
 
 isohybrid installercore.iso
 
