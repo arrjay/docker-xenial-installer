@@ -3,12 +3,32 @@ FROM xenial-bootable
 # install selinux for writing rh images
 RUN dpkg-divert --rename /usr/sbin/update-grub && ln -s /bin/true /usr/sbin/update-grub && \
     dpkg-divert --rename /usr/sbin/update-selinux-policy && ln -s /bin/true /usr/sbin/update-selinux-policy && \
+    apt-get -q -y update && \
     env LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get -q -y purge apparmor && \
     env LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get -q -y install selinux && \
     rm /usr/sbin/update-grub && dpkg-divert --rename --remove /usr/sbin/update-grub && \
     rm /usr/sbin/update-selinux-policy && dpkg-divert --rename --remove /usr/sbin/update-selinux-policy && \
+    apt-get -q -y clean && rm -rf /var/lib/apt/lists/* && \
     touch /etc/selinux/ubuntu/contexts/files/file_contexts.local && update-selinux-policy && \
     rm /.autorelabel
+
+# tpl files for iso9660 booting
+RUN bash -c 'd="" ; c="/isolinux/syslinux.cfg.tpl" ; g="/boot/grub/grub.cfg.tpl" ; \
+             a="console=tty0 root=UNSET intel_iommu=on iommu=pt iommu=1 rw network-config=eyJuZXR3b3JrIjp7ImNvbmZpZyI6ImRpc2FibGVkIn19fQ==" ; \
+             for i in /boot/initrd.img* ; do \
+               v="${i%-generic*}" ; v="${v#*.img-}" ; \
+               { [ ! -z "${d}" ] && d="${v}" ; echo "DEFAULT ${v}" >> "${c}" ; } ; \
+               \
+               echo "LABEL ${v}" >> "${c}" ; \
+               echo " KERNEL vmlinuz-${v}-generic" >> "${c}" ; \
+               echo " INITRD initrd.img-${v}-generic" >> "${c}" ; \
+               echo " APPEND ${a}" >> "${c}" ; \
+               \
+               echo "menuentry '\''${v}'\'' {" >> "${g}" ; \
+               echo "  linux /boot/vmlinuz-${v}-generic ${a}" >> "${g}" ; \
+               echo "  initrd /boot/initrd.img-${v}-generic" >> "${g}" ; \
+               echo "}" >> "${g}" ; \
+             done'
 
 # service to start a console on _any_ serial port
 ADD all-console-setup/addcons.service /etc/systemd/system/addcons.service
@@ -20,9 +40,6 @@ ADD pam-login /etc/pam.d/login
 
 # installation scripts
 ADD scripts /scripts
-
-# remove apt lists
-RUN rm -rf /var/lib/apt/lists/*
 
 # replace apparmor cache
 RUN rm -rf /etc/apparmor.d/cache && ln -sf /var/run/apparmor-cache /etc/apparmor.d/cache
