@@ -49,16 +49,16 @@ for k in "${isolinux}/boot"/vmlinuz* "${isolinux}/boot"/initrd.img* ; do
   ln "${k}" "${isolinux}/${d}"
 done
 
-xorriso --report_about HINT -as xorrisofs -U -A xe_installer -V xe_installer -volset xe_installer -r -rational-rock -o installercore.iso \
+xorriso --report_about HINT -as xorrisofs -U -A xe_installer -V xe_installer -volset xe_installer -r -rational-rock -o installercore_z.iso \
   -graft-points "/isolinux=${isolinux}" \
   -partition_cyl_align off -partition_offset 0 -apm-block-size 2048 -iso_mbr_part_type 0x00 \
   -b isolinux/isolinux.bin -c boot/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table \
-  -isohybrid-mbr "${scratch}/isolinux/isohdpfx.bin" --protective-msdos-label "${scratch}" \
+  -isohybrid-mbr "${scratch}/isolinux/isohdpfx.bin" --protective-msdos-label \
   -eltorito-alt-boot -e /boot/efiboot.img -no-emul-boot -isohybrid-gpt-basdat \
-  -eltorito-alt-boot -e /boot/macboot.img -no-emul-boot -isohybrid-gpt-basdat -isohybrid-apm-hfsplus -- \
-  -chmodi u+s /usr/bin/sudo -- \
-
-#  -find / -not -path /isolinux -exec set_filter --zisofs
+  -eltorito-alt-boot -e /boot/macboot.img -no-emul-boot -isohybrid-gpt-basdat -isohybrid-apm-hfsplus \
+  "${scratch}" -- \
+  -zisofs level=9:block_size=128k set_filter_r --zisofs /bin /etc /lib /opt /root /sbin /scripts /usr -- \
+  -chmodi u+s /usr/bin/sudo --
 
 isohybrid installercore.iso
 
