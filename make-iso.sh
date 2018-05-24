@@ -28,28 +28,12 @@ ln -sf "../proc/self/mounts" "${scratch}/etc/mtab"
 
 cp -R "${scratch}/boot" "${isolinux}/boot"
 
-cat << _EOF_ > "${isolinux}/syslinux.cfg"
-serial 1 115200
-timeout 900
-prompt 1
-_EOF_
-
-cat "${scratch}/isolinux/syslinux.cfg.tpl"
-
-sed -e 's/console=tty0/console=ttyS1,115200 security=selinux selinux=1 enforcing=0/g' \
-    -e 's/root=UNSET/root=LABEL=xe_installer/g' \
-      "${scratch}/isolinux/syslinux.cfg.tpl" >> "${isolinux}/syslinux.cfg"
-
-sed -e 's/console=tty0/console=ttyS1,115200 security=selinux selinux=1 enforcing=0/g' \
-    -e 's/root=UNSET/root=LABEL=xe_installer/g' \
-      "${scratch}/boot/grub/grub.cfg.tpl" >> "${scratch}/boot/grub/grub.cfg"
-
 for k in "${isolinux}/boot"/vmlinuz* "${isolinux}/boot"/initrd.img* ; do
   d="${k##*/}"
   ln "${k}" "${isolinux}/${d}"
 done
 
-xorriso --report_about HINT -as xorrisofs -U -A xe_installer -V xe_installer -volset xe_installer -r -rational-rock -o installercore_z.iso \
+xorriso --report_about HINT -as xorrisofs -U -A xe_installer -V xe_installer -volset xe_installer -r -rational-rock -o installercore.iso \
   -graft-points "/isolinux=${isolinux}" \
   -partition_cyl_align off -partition_offset 0 -apm-block-size 2048 -iso_mbr_part_type 0x00 \
   -b isolinux/isolinux.bin -c boot/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table \
