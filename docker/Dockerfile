@@ -5,7 +5,7 @@ RUN dpkg-divert --rename /usr/sbin/update-grub && ln -s /bin/true /usr/sbin/upda
     dpkg-divert --rename /usr/sbin/update-selinux-policy && ln -s /bin/true /usr/sbin/update-selinux-policy && \
     apt-get -q -y update && \
     env LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get -q -y purge apparmor && \
-    env LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get -q -y install selinux && \
+    env LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get -q -y install selinux pxz && \
     rm /usr/sbin/update-grub && dpkg-divert --rename --remove /usr/sbin/update-grub && \
     rm /usr/sbin/update-selinux-policy && dpkg-divert --rename --remove /usr/sbin/update-selinux-policy && \
     apt-get -q -y clean && rm -rf /var/lib/apt/lists/* && \
@@ -29,10 +29,10 @@ ADD fstab /etc/fstab
 RUN touch /var/hostname
 
 # pack and remove r/w dirs
-RUN tar cpf var.tar  -C /var .  && \
-    tar cpf tmp.tar  -C /tmp .  && \
-    tar cpf home.tar -C /home . && \ 
-    tar cpf ssh.tar  -C /etc/ssh '--exclude=ssh_host*' . && \
+RUN tar cpf var.tar  -C /var .  && pxz /var.tar  && \
+    tar cpf tmp.tar  -C /tmp .  && pxz /tmp.tar  && \
+    tar cpf home.tar -C /home . && pxz /home.tar && \
+    tar cpf ssh.tar  -C /etc/ssh '--exclude=ssh_host*' . && pxz /ssh.tar && \
     rm -rf /var /tmp /home /etc/ssh && \
     mkdir /var /tmp /home /etc/ssh
 
@@ -57,7 +57,7 @@ RUN ln -sf /dev/null /etc/tmpfiles.d/home.conf
 
 # tpl files for iso9660 booting
 RUN bash -c 'd="" ; c="/isolinux/syslinux.cfg" ; g="/boot/grub/grub.cfg" ; \
-             a="console=ttyS1,115200 root=xe_installer security=selinux selinux=1 enforcing=0 intel_iommu=on iommu=pt iommu=1 rw network-config=eyJuZXR3b3JrIjp7ImNvbmZpZyI6ImRpc2FibGVkIn19fQ==" ; \
+             a="console=ttyS1,115200 root=LABEL=xe_installer security=selinux selinux=1 enforcing=0 intel_iommu=on iommu=pt iommu=1 rw network-config=eyJuZXR3b3JrIjp7ImNvbmZpZyI6ImRpc2FibGVkIn19fQ==" ; \
              { echo "serial 1 115200"; echo "timeout 900" ; echo "prompt 1"; } > "${c}" ; \
              for i in /boot/initrd.img* ; do \
                v="${i%-generic*}" ; v="${v#*.img-}" ; \

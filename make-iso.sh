@@ -19,11 +19,6 @@ docker export newfs | tar xf - -C "${scratch}" '--exclude=dev/*' '--exclude=var/
 
 docker rm newfs
 
-pxz "${scratch}/var.tar"
-pxz "${scratch}/tmp.tar"
-pxz "${scratch}/ssh.tar"
-pxz "${scratch}/home.tar"
-
 ln -sf "../proc/self/mounts" "${scratch}/etc/mtab"
 
 cp -R "${scratch}/boot" "${isolinux}/boot"
