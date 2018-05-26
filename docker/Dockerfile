@@ -5,7 +5,7 @@ RUN dpkg-divert --rename /usr/sbin/update-grub && ln -s /bin/true /usr/sbin/upda
     dpkg-divert --rename /usr/sbin/update-selinux-policy && ln -s /bin/true /usr/sbin/update-selinux-policy && \
     apt-get -q -y update && \
     env LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get -q -y purge apparmor && \
-    env LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get -q -y install selinux pxz && \
+    env LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get -q -y install selinux pxz xorriso && \
     rm /usr/sbin/update-grub && dpkg-divert --rename --remove /usr/sbin/update-grub && \
     rm /usr/sbin/update-selinux-policy && dpkg-divert --rename --remove /usr/sbin/update-selinux-policy && \
     apt-get -q -y clean && rm -rf /var/lib/apt/lists/* && \
@@ -28,13 +28,16 @@ RUN bash -c 'for i in /boot/initrd.img* ; do v="${i#/boot/initrd.img-}" ; dracut
 ADD fstab /etc/fstab
 RUN touch /var/hostname
 
+RUN mkdir -p /cdroot/var /cdroot/tmp /cdroot/home /cdroot/etc/ssh /cdroot/dev /cdroot/proc /cdroot/sys /cdroot/run
+
 # pack and remove r/w dirs
-RUN tar cpf var.tar  -C /var .  && pxz /var.tar  && \
-    tar cpf tmp.tar  -C /tmp .  && pxz /tmp.tar  && \
-    tar cpf home.tar -C /home . && pxz /home.tar && \
-    tar cpf ssh.tar  -C /etc/ssh '--exclude=ssh_host*' . && pxz /ssh.tar && \
-    rm -rf /var /tmp /home /etc/ssh && \
-    mkdir /var /tmp /home /etc/ssh
+RUN tar cpf /cdroot/var.tar  -C /var .  && pxz /cdroot/var.tar  && \
+    tar cpf /cdroot/tmp.tar  -C /tmp .  && pxz /cdroot/tmp.tar  && \
+    tar cpf /cdroot/home.tar -C /home . && pxz /cdroot/home.tar && \
+    tar cpf /cdroot/ssh.tar  -C /etc/ssh '--exclude=ssh_host*' . && \
+     pxz /cdroot/ssh.tar && \
+    rm -rf /var /home /etc/ssh
+
 
 # override cloud.d resize module
 ADD cloud.cfg.d/* /etc/cloud/cloud.cfg.d/
@@ -53,12 +56,13 @@ ADD pam-login /etc/pam.d/login
 
 # update tmpfiles.d
 ADD tmpfiles.d/* /etc/tmpdiles.d
-RUN ln -sf /dev/null /etc/tmpfiles.d/home.conf
+RUN ln -sf /dev/null /etc/tmpfiles.d/home.conf && ln -sf ../proc/self/mounts /cdroot/etc/mtab
 
-# tpl files for iso9660 booting
+# tpl files for iso9660 booting and copy kernel/initrd to /isolinux
+# isoloinux doesn't do symlinks
 RUN bash -c 'd="" ; c="/isolinux/syslinux.cfg" ; g="/boot/grub/grub.cfg" ; \
-             a="console=ttyS1,115200 root=LABEL=xe_installer security=selinux selinux=1 enforcing=0 intel_iommu=on iommu=pt iommu=1 rw network-config=eyJuZXR3b3JrIjp7ImNvbmZpZyI6ImRpc2FibGVkIn19fQ==" ; \
-             { echo "serial 1 115200"; echo "timeout 900" ; echo "prompt 1"; } > "${c}" ; \
+             a="console=ttyS0,115200 root=LABEL=xe_installer security=selinux selinux=1 enforcing=0 intel_iommu=on iommu=pt iommu=1 rw network-config=eyJuZXR3b3JrIjp7ImNvbmZpZyI6ImRpc2FibGVkIn19fQ==" ; \
+             { echo "serial 0 115200"; echo "timeout 900" ; echo "prompt 1"; } > "${c}" ; \
              for i in /boot/initrd.img* ; do \
                v="${i%-generic*}" ; v="${v#*.img-}" ; \
                { [ ! -z "${d}" ] && d="${v}" ; echo "DEFAULT ${v}" >> "${c}" ; } ; \
@@ -72,7 +76,13 @@ RUN bash -c 'd="" ; c="/isolinux/syslinux.cfg" ; g="/boot/grub/grub.cfg" ; \
                echo "  linux /boot/vmlinuz-${v}-generic ${a}" >> "${g}" ; \
                echo "  initrd /boot/initrd.img-${v}-generic" >> "${g}" ; \
                echo "}" >> "${g}" ; \
+               \
+               cp "${i}" "/isolinux/${i/boot/}" ; \
+               cp "/boot/vmlinuz-${v}-generic" "/isolinux/vmlinuz-${v}-generic" ; \
              done'
 
 # installation scripts
 ADD scripts /scripts
+
+# entrypoint will make an ISO
+ENTRYPOINT /scripts/make-cdrom.sh
