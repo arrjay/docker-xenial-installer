@@ -61,8 +61,8 @@ RUN ln -sf /dev/null /etc/tmpfiles.d/home.conf && ln -sf ../proc/self/mounts /cd
 # tpl files for iso9660 booting and copy kernel/initrd to /isolinux
 # isoloinux doesn't do symlinks
 RUN bash -c 'd="" ; c="/isolinux/syslinux.cfg" ; g="/boot/grub/grub.cfg" ; \
-             a="console=ttyS0,115200 root=LABEL=xe_installer security=selinux selinux=1 enforcing=0 intel_iommu=on iommu=pt iommu=1 rw network-config=eyJuZXR3b3JrIjp7ImNvbmZpZyI6ImRpc2FibGVkIn19fQ==" ; \
-             { echo "serial 0 115200"; echo "timeout 900" ; echo "prompt 1"; } > "${c}" ; \
+             a="console=tty0 root=LABEL=xe_installer security=selinux selinux=1 enforcing=0 intel_iommu=on iommu=pt iommu=1 rw network-config=eyJuZXR3b3JrIjp7ImNvbmZpZyI6ImRpc2FibGVkIn19fQ==" ; \
+             { echo "timeout 900" ; echo "prompt 1"; } > "${c}" ; \
              for i in /boot/initrd.img* ; do \
                v="${i%-generic*}" ; v="${v#*.img-}" ; \
                { [ ! -z "${d}" ] && d="${v}" ; echo "DEFAULT ${v}" >> "${c}" ; } ; \
@@ -80,6 +80,9 @@ RUN bash -c 'd="" ; c="/isolinux/syslinux.cfg" ; g="/boot/grub/grub.cfg" ; \
                cp "${i}" "/isolinux/${i/boot/}" ; \
                cp "/boot/vmlinuz-${v}-generic" "/isolinux/vmlinuz-${v}-generic" ; \
              done'
+
+# dummy directory for iamges
+RUN mkdir /images
 
 # installation scripts
 ADD scripts /scripts
