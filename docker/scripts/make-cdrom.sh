@@ -2,9 +2,14 @@
 
 set -eux
 
-[ -d /output ] || {
-  echo "script requires /output volume mount for saving contents" 1>&2
+[ -d /workdir ] || {
+  echo "script requires /workdir volume mount for saving contents" 1>&2
   exit 1
+}
+
+xorriso_image_graft="-graft-points /images=/images"
+[ -d /workdir/images ] && {
+  xorriso_image_graft="-graft-points /images=/workdir/images"
 }
 
 xorriso --report_about HINT -as xorrisofs -U -A xe_installer -V xe_installer -volset xe_installer -r -rational-rock -o /tmp/installercore.iso \
@@ -14,6 +19,7 @@ xorriso --report_about HINT -as xorrisofs -U -A xe_installer -V xe_installer -vo
   -graft-points "/opt=/opt" -graft-points "/root=/root" -graft-points "/sbin=/sbin" -graft-points "/scripts=/scripts" \
   -graft-points "/srv=/srv" -graft-points "/usr=/usr" \
   -graft-points "/etc=/cdroot/etc" \
+  ${xorriso_image_graft} \
   -partition_cyl_align off -partition_offset 0 -apm-block-size 2048 \
   -b isolinux/isolinux.bin -c boot/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table \
   -isohybrid-mbr "/isolinux/isohdpfx.bin" --protective-msdos-label \
@@ -25,4 +31,4 @@ xorriso --report_about HINT -as xorrisofs -U -A xe_installer -V xe_installer -vo
 
 isohybrid /tmp/installercore.iso
 
-mv /tmp/installercore.iso /output
+mv /tmp/installercore.iso /workdir
