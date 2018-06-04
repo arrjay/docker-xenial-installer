@@ -41,7 +41,7 @@ trap cleanup EXIT
 # option parser
 parse_opts () {
   local switch
-  while getopts "SWhk:m:p:t:" switch ; do
+  while getopts "SWk:m:p:t:" switch ; do
     case "${switch}" in
       S) DATA_PARTITION="no" ;;
       W) NOOP=0 ;;
@@ -49,6 +49,7 @@ parse_opts () {
       m) MINSZ="${OPTARG}" ;;
       p) LUKS_PASSWORD="${OPTARG}" ;;
       t) TARGETPATH="${OPTARG}" ;;
+      *) echo "huh?" 1>&2 ; exit 1 ;;
     esac
   done
 }
@@ -563,7 +564,7 @@ make_n_mount () {
           mount -t "${fstyp}" "${dev}" "${path}"
         fi
       fi
-    done < "$(sort -k2 < ${FSTAB})"
+    done <<< "$(sort -k2 < "${FSTAB}")"
     pass=$(( pass + 1 ))
   done
 }
@@ -946,7 +947,7 @@ else
 
   # save fstab to new system
   mkdir "${TARGETPATH}/etc"
-  sed 's@'"${TARGETPATH}"'@@g' < "$(sort -k2 < ${FSTAB})" > "${TARGETPATH}/etc/fstab"
+  sed 's@'"${TARGETPATH}"'@@g' <<< "$(sort -k2 < "${FSTAB}")" > "${TARGETPATH}/etc/fstab"
 
   # do we have arrays?
   mds_defined=( /dev/md/* )
