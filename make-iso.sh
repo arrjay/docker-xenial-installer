@@ -7,7 +7,7 @@ docker run --name newfs --entrypoint true build/xenial-installer
 scratch=$(mktemp -d /var/tmp/newfs.XXXXXX)
 isolinux=$(mktemp -d /var/tmp/isolinux.XXXXXX)
 
-yum -y install syslinux
+yum -y install syslinux xorriso
 
 cp /usr/share/syslinux/*.c32 /usr/share/syslinux/isolinux.bin /usr/share/syslinux/isohd*.bin "${isolinux}"
 
