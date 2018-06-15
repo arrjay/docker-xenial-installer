@@ -7,6 +7,8 @@ docker run --name newfs --entrypoint true build/xenial-installer
 scratch=$(mktemp -d /var/tmp/newfs.XXXXXX)
 isolinux=$(mktemp -d /var/tmp/isolinux.XXXXXX)
 
+yum -y install syslinux
+
 cp /usr/share/syslinux/*.c32 /usr/share/syslinux/isolinux.bin /usr/share/syslinux/isohd*.bin "${isolinux}"
 
 docker export newfs | tar xf - -C "${scratch}" '--exclude=dev/*' '--exclude=var/*' '--exclude=tmp/*' '--exclude=etc/ssh/*' \
