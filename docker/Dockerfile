@@ -3,8 +3,9 @@ FROM xenial-bootable
 # install selinux for writing rh images
 RUN dpkg-divert --rename /usr/sbin/update-grub && ln -s /bin/true /usr/sbin/update-grub && \
     dpkg-divert --rename /usr/sbin/update-selinux-policy && ln -s /bin/true /usr/sbin/update-selinux-policy && \
-    env LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get -q -y purge apparmor && \
-    env LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get -q -y install selinux && \
+    apt-get -qq update && \
+    env LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get -qq -y purge apparmor && \
+    env LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get -qq -y install selinux && \
     rm /usr/sbin/update-grub && dpkg-divert --rename --remove /usr/sbin/update-grub && \
     rm /usr/sbin/update-selinux-policy && dpkg-divert --rename --remove /usr/sbin/update-selinux-policy
 
