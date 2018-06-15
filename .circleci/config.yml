@@ -15,4 +15,4 @@ jobs:
           command: ./build.sh
       - run:
           name: export to iso
-          command: ./make-iso.sh
+          command: docker run --rm=true -v "$(pwd):/workdir" build/xenial-installer
