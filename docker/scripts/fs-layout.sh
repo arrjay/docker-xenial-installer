@@ -41,7 +41,7 @@ trap cleanup EXIT
 # option parser
 parse_opts () {
   local switch
-  while getopts "SWhk:m:p:t:" switch ; do
+  while getopts "SWk:m:p:t:" switch ; do
     case "${switch}" in
       S) DATA_PARTITION="no" ;;
       W) NOOP=0 ;;
@@ -49,6 +49,7 @@ parse_opts () {
       m) MINSZ="${OPTARG}" ;;
       p) LUKS_PASSWORD="${OPTARG}" ;;
       t) TARGETPATH="${OPTARG}" ;;
+      *) echo "huh?" 1>&2 ; exit 1 ;;
     esac
   done
 }
@@ -136,14 +137,16 @@ key2disk () {
 # return all disk devices _except_ the ones we booted from sans partitions
 # shellcheck disable=SC2120
 get_baseblocks() {
-  local dev shortdev candidates topdev results check value scratch blocks
+  local dev shortdev candidates topdev results check value scratch blocks op
   check="" ; value="" ; results=""
 
   # we don't _require_ an argument (this is why we have the SC2120 exception)
   [ ! -z "${1+x}" ] && {
-    # if we do have one, it's (/sys/class/block/$foo/)check == value
-    check="${1%%=*}"
-    value="${1##*=}"
+    # if we do have one, it's (/sys/class/block/$foo/)check [!=] value
+    check="${1%%[=\!]*}"
+    value="${1##*[=\!]}"
+    op="${1#${check}}"
+    op="${op%${value}}"
   }
 
   # if you have cciss adapters you probably care about right here.
@@ -167,10 +170,9 @@ get_baseblocks() {
     blocks=$(blockdev --getsize64 "/dev/${topdev}")
     if [ "${blocks}" -lt "${MINSZ}" ] ; then continue ; fi
 
-    # if we have a check, do that comparison now. note the reverse logic of "do I skip here?"
     if [ ! -z "${check}" ] ; then
       read -r scratch < "/sys/class/block/${topdev}/${check}"
-      if [ "${scratch}" != "${value}" ] ; then continue ; fi
+      if [ ! "${scratch}" "${op}=" "${value}" ] ; then continue ; fi
     fi
 
     # if we got to this point, add our topdev to the result list
@@ -562,7 +564,7 @@ make_n_mount () {
           mount -t "${fstyp}" "${dev}" "${path}"
         fi
       fi
-    done < "${FSTAB}"
+    done <<< "$(sort -k2 < "${FSTAB}")"
     pass=$(( pass + 1 ))
   done
 }
@@ -690,7 +692,7 @@ vgchange -a n || true
 stop_arrays
 
 # shellcheck disable=SC2119
-all_disks=$(get_baseblocks)
+all_disks=$(get_baseblocks device/vendor!iODD)
 disknr=$(count_words "${all_disks}")
 
 candidate_disks=""
@@ -945,7 +947,7 @@ else
 
   # save fstab to new system
   mkdir "${TARGETPATH}/etc"
-  sed 's@'"${TARGETPATH}"'@@g' < "${FSTAB}" > "${TARGETPATH}/etc/fstab"
+  sed 's@'"${TARGETPATH}"'@@g' <<< "$(sort -k2 < "${FSTAB}")" > "${TARGETPATH}/etc/fstab"
 
   # do we have arrays?
   mds_defined=( /dev/md/* )
