@@ -16,3 +16,6 @@ jobs:
       - run:
           name: export to iso
           command: docker run --rm=true -v "$(pwd):/workdir" build/xenial-installer
+      - run:
+          name: publish iso
+          command: ./publish.sh
