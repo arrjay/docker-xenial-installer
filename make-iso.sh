@@ -19,7 +19,7 @@ docker export newfs | tar xf - -C "${scratch}" '--exclude=dev/*' '--exclude=var/
 
 docker rm newfs
 
-rsync -R "${scratch}/isolinux/" "${isolinux}/"
+rsync -r "${scratch}/isolinux/" "${isolinux}/"
 
 cp /usr/share/syslinux/*.c32 /usr/share/syslinux/isolinux.bin /usr/share/syslinux/isohd*.bin "${isolinux}"
 
