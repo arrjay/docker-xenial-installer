@@ -7,7 +7,7 @@ docker run --name newfs --entrypoint true build/xenial-installer
 scratch=$(mktemp -d /var/tmp/newfs.XXXXXX)
 isolinux=$(mktemp -d /var/tmp/isolinux.XXXXXX)
 
-yum -y install syslinux xorriso
+yum -y install syslinux xorriso rsync
 
 docker export newfs | tar xf - -C "${scratch}" '--exclude=dev/*' '--exclude=var/*' '--exclude=tmp/*' '--exclude=etc/ssh/*' \
   '--exclude=home/*' \
@@ -19,7 +19,7 @@ docker export newfs | tar xf - -C "${scratch}" '--exclude=dev/*' '--exclude=var/
 
 docker rm newfs
 
-cp -R "${scratch}/isolinux/" "${isolinux}/"
+rsync -R "${scratch}/isolinux/" "${isolinux}/"
 
 cp /usr/share/syslinux/*.c32 /usr/share/syslinux/isolinux.bin /usr/share/syslinux/isohd*.bin "${isolinux}"
 
