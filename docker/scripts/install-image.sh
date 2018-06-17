@@ -3,7 +3,7 @@
 set -eux
 
 echo "tar may produce errors here as we told it to keep old files - we are ignoring it"
-tar --extract --file="${1}" --keep-old-files --preserve-permissions -C /mnt/sysimage || true
+tar --extract --file="${1}" --keep-old-files --preserve-permissions --sparse -C /mnt/sysimage || true
 
 mount -o bind /dev/ /mnt/sysimage/dev/
 mount -o bind /proc/ /mnt/sysimage/proc/
