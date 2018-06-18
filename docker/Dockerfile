@@ -28,12 +28,13 @@ RUN bash -c 'for i in /boot/initrd.img* ; do v="${i#/boot/initrd.img-}" ; dracut
 ADD fstab /etc/fstab
 RUN touch /var/hostname
 
-RUN mkdir -p /cdroot/var /cdroot/tmp /cdroot/home /cdroot/etc/ssh /cdroot/dev /cdroot/proc /cdroot/sys /cdroot/run
+RUN mkdir -p /cdroot/var /cdroot/tmp /cdroot/home /cdroot/etc/ssh /cdroot/dev /cdroot/proc /cdroot/sys /cdroot/run /cdroot/root
 
 # pack and remove r/w dirs
 RUN tar cpf /cdroot/var.tar  -C /var .  && pxz /cdroot/var.tar  && \
     tar cpf /cdroot/tmp.tar  -C /tmp .  && pxz /cdroot/tmp.tar  && \
     tar cpf /cdroot/home.tar -C /home . && pxz /cdroot/home.tar && \
+    tar cpf /cdroot/root.tar -C /root . && pxz /cdroot/root.tar && \
     tar cpf /cdroot/ssh.tar  -C /etc/ssh '--exclude=ssh_host*' . && \
      pxz /cdroot/ssh.tar && \
     rm -rf /var /home /etc/ssh

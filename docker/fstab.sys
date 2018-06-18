@@ -3,3 +3,4 @@ tmpfs   /tmp            tmpfs   size=64m        0 0
 tmpfs   /etc/ssh        tmpfs   size=1m         0 0
 tmpfs   /mnt            tmpfs   size=1m         0 0
 tmpfs   /home           tmpfs   size=128m       0 0
+tmpfs   /root           tmpfs   size=1m         0 0

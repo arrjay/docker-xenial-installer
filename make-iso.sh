@@ -10,7 +10,7 @@ isolinux=$(mktemp -d /var/tmp/isolinux.XXXXXX)
 yum -y install syslinux xorriso rsync
 
 docker export newfs | tar xf - -C "${scratch}" '--exclude=dev/*' '--exclude=var/*' '--exclude=tmp/*' '--exclude=etc/ssh/*' \
-  '--exclude=home/*' \
+  '--exclude=home/*' '--exclude=root/*' \
   '--exclude=usr/lib/locale' '--exclude=usr/share/locale' '--exclude=lib/gconv' '--exclude=lib64/gconv' \
   '--exclude=bin/localedef'  '--exclude=sbin/build-locale-archive' '--exclude=usr/share/i18n' \
   '--exclude=usr/share/man'  '--exclude=usr/share/doc' '--exclude=usr/share/info' '--exclude=usr/share/gnome/help' \

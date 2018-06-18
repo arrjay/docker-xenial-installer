@@ -6,3 +6,4 @@ unpack_archive /sysroot/var.tar.xz  /sysroot/var
 unpack_archive /sysroot/tmp.tar.xz  /sysroot/tmp
 unpack_archive /sysroot/ssh.tar.xz  /sysroot/etc/ssh
 unpack_archive /sysroot/home.tar.xz /sysroot/home
+unpack_archive /sysroot/root.tar.xz /sysroot/root
