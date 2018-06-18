@@ -61,7 +61,7 @@ RUN ln -sf /dev/null /etc/tmpfiles.d/home.conf && ln -sf ../proc/self/mounts /cd
 # tpl files for iso9660 booting and copy kernel/initrd to /isolinux
 # isoloinux doesn't do symlinks
 RUN bash -c 'd="" ; c="/isolinux/syslinux.cfg" ; g="/boot/grub/grub.cfg" ; \
-             a="console=tty0 root=LABEL=xe_installer security=selinux selinux=1 enforcing=0 intel_iommu=on iommu=pt iommu=1 rw network-config=e2NvbmZpZzogZGlzYWJsZWR9" ; \
+             a="console=tty0 root=LABEL=xe_installer security=selinux selinux=1 enforcing=0 intel_iommu=on iommu=pt iommu=1 rw" ; \
              { echo "timeout 900" ; echo "prompt 1"; } > "${c}" ; \
              for i in /boot/initrd.img* ; do \
                v="${i%-generic*}" ; v="${v#*.img-}" ; \
