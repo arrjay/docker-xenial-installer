@@ -5,7 +5,7 @@ RUN dpkg-divert --rename /usr/sbin/update-grub && ln -s /bin/true /usr/sbin/upda
     dpkg-divert --rename /usr/sbin/update-selinux-policy && ln -s /bin/true /usr/sbin/update-selinux-policy && \
     apt-get -qq update && \
     env LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get -qq -y purge apparmor && \
-    env LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get -q -y install selinux pxz xorriso jq && \
+    env LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get -q -y install selinux pxz xorriso jq curl && \
     rm /usr/sbin/update-grub && dpkg-divert --rename --remove /usr/sbin/update-grub && \
     rm /usr/sbin/update-selinux-policy && dpkg-divert --rename --remove /usr/sbin/update-selinux-policy && \
     apt-get -q -y clean && rm -rf /var/lib/apt/lists/* && \
