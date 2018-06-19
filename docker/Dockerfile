@@ -29,6 +29,7 @@ ADD fstab /etc/fstab
 RUN touch /var/hostname
 
 RUN mkdir -p /cdroot/var /cdroot/tmp /cdroot/home /cdroot/etc/ssh /cdroot/dev /cdroot/proc /cdroot/sys /cdroot/run /cdroot/root
+RUN ln -sf /run/systemd/resolve/resolv.conf /cdroot/etc/resolv.conf
 
 # pack and remove r/w dirs
 RUN tar cpf /cdroot/var.tar  -C /var .  && pxz /cdroot/var.tar  && \
