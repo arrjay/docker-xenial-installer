@@ -168,6 +168,7 @@ get_baseblocks() {
 
     # compare blocks against our MINSZ
     blocks=$(blockdev --getsize64 "/dev/${topdev}")
+    if [ -z "${blocks}" ] ; then continue ; fi
     if [ "${blocks}" -lt "${MINSZ}" ] ; then continue ; fi
 
     if [ ! -z "${check}" ] ; then
