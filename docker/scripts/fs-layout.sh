@@ -943,18 +943,21 @@ if [ ! -z "${KS_INCLUDE}" ] ; then
   # install bootloader
   printf 'bootloader --append=" crashkernel auto" --location=mbr\n' >> "${KS_INCLUDE}"
 else
+  # create overlay dir
+  mkdir -p /tmp/overlay/etc/{keys,mdadm}
+
   # mount errything
   make_n_mount
 
   # save fstab to new system
   mkdir "${TARGETPATH}/etc"
-  sed 's@'"${TARGETPATH}"'@@g' <<< "$(sort -k2 < "${FSTAB}")" > "${TARGETPATH}/etc/fstab"
+  sed 's@'"${TARGETPATH}"'@@g' <<< "$(sort -k2 < "${FSTAB}")" | tee /tmp/overlay/etc/fstab > "${TARGETPATH}/etc/fstab"
 
   # do we have arrays?
   mds_defined=( /dev/md/* )
   if [ ! -z "${mds_defined[*]+x}" ] ; then
     mkdir  "${TARGETPATH}/etc/mdadm"
-    mdadm --examine --scan > "${TARGETPATH}/etc/mdadm/mdadm.conf"
+    mdadm --examine --scan | tee /tmp/overlay/etc/mdadm/mdadm.conf > "${TARGETPATH}/etc/mdadm/mdadm.conf"
   fi
 
   if [ ! -z "${LUKS_PASSWORD}" ] ; then
@@ -962,11 +965,12 @@ else
       # if we set up luks, rekey the data pv now.
       mkdir "${TARGETPATH}/etc/keys"
       dd if=/dev/random of="${TARGETPATH}/etc/keys/datavol.luks" bs=1 count=32
+      cp "${TARGETPATH}/etc/keys/datavol.luks" /tmp/overlay/etc/keys
       printf '%s' "${LUKS_PASSWORD}" | cryptsetup luksAddKey "${data_luks_source}" "${TARGETPATH}/etc/keys/datavol.luks" -
       printf '%s' "${LUKS_PASSWORD}" | cryptsetup luksRemoveKey "${data_luks_source}"
       dataluks=$(pvs -S vg_name=data --noheadings -o pv_name)
       dataluks="${dataluks##*/luks-}"
-      printf 'luks-%s UUID=%s /etc/keys/datavol.luks luks\n' "${dataluks}" "${dataluks}" >> "${TARGETPATH}/etc/crypttab"
+      printf 'luks-%s UUID=%s /etc/keys/datavol.luks luks\n' "${dataluks}" "${dataluks}" | tee -a /tmp/overlay/etc/crypttab >> "${TARGETPATH}/etc/crypttab"
     fi
 
     # configure crypttab
@@ -975,7 +979,7 @@ else
 
     {
       printf 'luks-%s UUID=%s none luks\n'                   "${sysluks}"  "${sysluks}"
-    } >> "${TARGETPATH}/etc/crypttab"
+    } | tee -a /tmp/overlay/etc/crypttab >> "${TARGETPATH}/etc/crypttab"
   fi
 fi
 
