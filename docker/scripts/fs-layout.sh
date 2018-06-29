@@ -171,7 +171,7 @@ get_baseblocks() {
     if [ -z "${blocks}" ] ; then continue ; fi
     if [ "${blocks}" -lt "${MINSZ}" ] ; then continue ; fi
 
-    if [ ! -z "${check}" ] ; then
+    if [ ! -z "${check}" ] && [ -f "/sys/class/block/${topdev}/${check}" ] ; then
       read -r scratch < "/sys/class/block/${topdev}/${check}"
       if [ ! "${scratch}" "${op}=" "${value}" ] ; then continue ; fi
     fi
