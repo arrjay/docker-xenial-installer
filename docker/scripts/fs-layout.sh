@@ -301,9 +301,12 @@ partition_disk () {
   echo "biosboot=${disk}${partition}"
 
   # EFI system partition
+  # note that you get EFI SP for PC, hfs+ for mac
+  efisp_type='"EFI System Partition"'
+  [ -f /run/platform-info/chassis_vendor_words/apple ] && efisp_type="hfs+"
   {
     pstart=1 ; while [ $((pstart * chunk)) -lt "${biosend}" ] ; do pstart=$((pstart + 1)) ; done ; pstart=$((pstart + 1))
-    parted -a optimal "${disk}" mkpart '"EFI System Partition"' "$((pstart * chunk))s" 300MB && partition=$((partition + 1))
+    parted -a optimal "${disk}" mkpart "${efisp_type}" "$((pstart * chunk))s" 300MB && partition=$((partition + 1))
     parted "${disk}" toggle "${partition}" boot
   } > /dev/null 2>&1
   echo "efiboot=${disk}${partition}"
@@ -458,8 +461,9 @@ ready_md () {
   # efi and boot mds get 1.0 metadata, others 1.1
   case "${mdname}" in
     efi)
-      extra='--label="EFISP" --noformat --fsoptions="umask=0077,shortname=winnt"'
       fs_opts='umask=0077,shortname=winnt'
+      [ -f /run/platform-info/chassis_vendor_words/apple ] && fs_opts='umask=0077'
+      extra="--label="'"'"EFISP"'"'" --noformat --fsoptions="'"'"${fs_opts}"'"'
       fs_nos='0 2'
     ;;
     boot) extra='--label="/boot"' ;;
@@ -469,7 +473,13 @@ ready_md () {
   mdadm --create "/dev/md/${mdname}" -N"${mdname}" -l"${mdlevel}" -n "$(count_words "${mddev}")" --metadata="${datalevel}" ${mddev}
   wipefs -a "/dev/md/${mdname}"
   case "${fstyp}" in
-    efi)  mkfs.vfat -F32 -nEFISP "/dev/md/${mdname}" ;;
+    efi)
+      if [ -f /run/platform-info/chassis_vendor_words/apple ] ; then
+        mkfs.hfsplus -v EFISP "/dev/md/${mdname}"
+      else
+        mkfs.vfat -F32 -nEFISP "/dev/md/${mdname}"
+      fi
+    ;;
     ext2) mkfs.ext2 "/dev/md/${mdname}" ;;
   esac
   if [ ! -z "${KS_INCLUDE}" ] ; then
@@ -486,7 +496,13 @@ ready_md () {
   fi
   case "${fstyp}" in
     lvmpv|bcache) : ;;
-    efi)   printf '/dev/md/%s %s %s %s %s\n' "${mdname}" "${mpath}" "vfat" "${fs_opts}" "${fs_nos}" >> "${FSTAB}" ;;
+    efi)
+         if [ -f /run/platform-info/chassis_vendor_words/apple ] ; then
+           printf '/dev/md/%s %s %s %s %s\n' "${mdname}" "${mpath}" "hfsplus" "${fs_opts}" "${fs_nos}" >> "${FSTAB}"
+         else
+           printf '/dev/md/%s %s %s %s %s\n' "${mdname}" "${mpath}" "vfat" "${fs_opts}" "${fs_nos}" >> "${FSTAB}"
+         fi
+    ;;
     *)     printf '/dev/md/%s %s %s %s %s\n' "${mdname}" "${mpath}" "${fstyp}" "${fs_opts}" "${fs_nos}" >> "${FSTAB}" ;;
   esac
   sleep 1
@@ -512,7 +528,13 @@ ready_part () {
   # always update fstab, though we may rewrite later.
   case "${fstyp}" in
     lvmpv|bcache) : ;;
-    efi)   printf '%s %s %s %s %s\n' "${partition}" "${mpath}" "vfat" "${fs_opts}" "${fs_nos}" >> "${FSTAB}" ;;
+    efi)
+         if [ -f /run/platform-info/chassis_vendor_words/apple ] ; then
+           printf '%s %s %s %s %s\n' "${partition}" "${mpath}" "hfsplus" "${fs_opts}" "${fs_nos}" >> "${FSTAB}"
+         else
+           printf '%s %s %s %s %s\n' "${partition}" "${mpath}" "vfat" "${fs_opts}" "${fs_nos}" >> "${FSTAB}"
+         fi
+    ;;
     *)     printf '%s %s %s %s %s\n' "${partition}" "${mpath}" "${fstyp}" "${fs_opts}" "${fs_nos}" >> "${FSTAB}" ;;
   esac
   if [ ! -z "${KS_INCLUDE}" ] ; then
@@ -525,14 +547,24 @@ ready_part () {
     case "${fstyp}" in
       lvmpv|bcache) : ;;
       efi)
-        mkfs.vfat -F32 -nEFISP "${partition}"
+        if [ -f /run/platform-info/chassis_vendor_words/apple ] ; then
+          mkfs.hfsplus -v EFISP "${partition}"
+        else
+          mkfs.vfat -F32 -nEFISP "${partition}"
+        fi
       ;;
       *)
         "mkfs.${fstyp}" "${partition}"
       ;;
     esac
     # handle efi for the next bit..
-    case "${fstyp}" in efi) fstyp="vfat" ;; esac
+    case "${fstyp}" in efi)
+      if [ -f /run/platform-info/chassis_vendor_words/apple ] ; then
+        fstyp="hfsplus"
+      else
+        fstyp="vfat"
+      fi
+    ;; esac
     # rewrite fstab with UUID now.
     # shellcheck disable=SC2015
     grep -q "${partition}" "${FSTAB}" && {
