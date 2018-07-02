@@ -60,11 +60,14 @@ for l in $(curl -sS -u 'anonymous:' "https://${HOST}/v2/${IMAGE}/manifests/${TAG
   done
 done
 
+mkdir -p /mnt/sysimage/run/platform-info
+
 rsync -av /tmp/overlay/ /mnt/sysimage/
 
 mount -o bind /dev/ /mnt/sysimage/dev/
 mount -o bind /proc/ /mnt/sysimage/proc/
 mount -o bind /sys/ /mnt/sysimage/sys/
+mount -o bind /run/platform-info /mnt/sysimage/run/platform-info
 
 chroot /mnt/sysimage /bin/run-parts /scripts/grub-config
 chroot /mnt/sysimage /bin/run-parts /scripts/dracut-config
