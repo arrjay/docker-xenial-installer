@@ -17,10 +17,10 @@ jobs:
       - run:
           name: export to iso
           command: |
-	    docker create -v /workdir --name workdir alpine:3.4 /bin/true
-	    docker run --volumes-from workdir build/xenial-installer
+            docker create -v /workdir --name workdir alpine:3.4 /bin/true
+            docker run --volumes-from workdir build/xenial-installer
       - run:
           name: publish iso
           command: |
-	    docker cp workdir:/workdir/installercore.iso installercore.iso
-	    ./publish.sh
+            docker cp workdir:/workdir/installercore.iso installercore.iso
+            ./publish.sh
