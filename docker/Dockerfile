@@ -46,7 +46,7 @@ ADD cloud.cfg.d/* /etc/cloud/cloud.cfg.d/
 RUN sed -i -e '/ - apt-.*/d' /etc/cloud/cloud.cfg
 
 # replace apparmor cache
-RUN rm -rf /etc/apparmor.d/cache && ln -sf /var/run/apparmor-cache /etc/apparmor.d/cache
+RUN mkdir -p /etc/apparmor.d && rm -rf /etc/apparmor.d/cache && ln -sf /var/run/apparmor-cache /etc/apparmor.d/cache
 
 # service to start a console on _any_ serial port
 ADD all-console-setup/addcons.service /etc/systemd/system/addcons.service
