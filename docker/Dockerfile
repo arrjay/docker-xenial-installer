@@ -21,8 +21,8 @@ ADD fstab.sys /etc/fstab.sys
 ADD dracut-modules/livecd /usr/lib/dracut/modules.d/50livecd
 ADD dracut.conf /etc/dracut.conf
 
-# regenerate initrd before breaking fetab
-RUN bash -c 'for i in /boot/initrd.img* ; do v="${i#/boot/initrd.img-}" ; dracut -f "${i}" "${v}" ; done'
+# generate initrds before breaking fetab
+RUN bash -c 'for f in /boot/vmlinuz-*-generic ; do v="${f#/boot/vmlinuz-}" ; dracut -f "/boot/initrd.img-${v}" "${v}" ; done'
 
 # fstab _here_ does bind trickery
 ADD fstab /etc/fstab
