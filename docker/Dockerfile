@@ -1,11 +1,19 @@
 FROM xenial-bootable
 
 # install selinux for writing rh images
+# note that installing selinux itself should be the _last_ thing you do as we explicitly break the grub-pc dep
 RUN dpkg-divert --rename /usr/sbin/update-grub && ln -s /bin/true /usr/sbin/update-grub && \
     dpkg-divert --rename /usr/sbin/update-selinux-policy && ln -s /bin/true /usr/sbin/update-selinux-policy && \
     apt-get -qq update && \
     env LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get -qq -y purge apparmor && \
-    env LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get -q -y install selinux pxz xorriso jq curl && \
+    env LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get --no-install-recommends install -q -y \
+     checkpolicy libapol4 libqpol1 policycoreutils \
+     python-ipy python-selinux python-semanage python-sepolgen python-sepolicy python-setools \
+     selinux-utils pxz xorriso jq curl gawk libsigsegv2 && \
+    env LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get download selinux selinux-policy-ubuntu && \
+    dpkg -i --ignore-depends=grub-pc /selinux_*.deb && \
+    dpkg -i /selinux-*.deb && \
+    rm -rf /selinux*.deb && \
     rm /usr/sbin/update-grub && dpkg-divert --rename --remove /usr/sbin/update-grub && \
     rm /usr/sbin/update-selinux-policy && dpkg-divert --rename --remove /usr/sbin/update-selinux-policy && \
     apt-get -q -y clean && rm -rf /var/lib/apt/lists/* && \
