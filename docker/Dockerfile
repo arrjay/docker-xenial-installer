@@ -29,7 +29,21 @@ ADD fstab.sys /etc/fstab.sys
 ADD dracut-modules/livecd /usr/lib/dracut/modules.d/50livecd
 ADD dracut.conf /etc/dracut.conf
 
-# generate initrds before breaking fetab
+# create EFI images and directories
+RUN truncate -s 12M /boot/efiboot.img && mkfs.vfat -F16 /boot/efiboot.img && \
+      mmd -i /boot/efiboot.img efi && mmd -i /boot/efiboot.img efi/boot && \
+      mcopy -i /boot/efiboot.img /usr/lib/shim/shimx64.efi.signed ::efi/boot/bootx64.efi && \
+      mcopy -i /boot/efiboot.img /usr/lib/grub/x86_64-efi-signed/gcdx64.efi.signed ::efi/boot/grubx64.efi && \
+      mcopy -i /boot/efiboot.img /usr/lib/grub/i386-efi/gcdia32.efi ::efi/boot/bootia32.efi && \
+      mmd -i /boot/efiboot.img efi/boot/i386-efi && mcopy -i /boot/efiboot.img /usr/lib/grub/i386-efi/*.mod ::efi/boot/i386-efi && \
+      mkdir -p /EFI/BOOT/i386-efi && cp /usr/lib/grub/i386-efi/*.mod /EFI/BOOT/i386-efi && \
+      echo "insmod linux" >> "/EFI/BOOT/grub.cfg" && echo "configfile /boot/grub/grub.cfg" >> "/EFI/BOOT/grub.cfg"
+
+## mac boot madness is just pilfered from fedora ;)
+RUN wget -o /boot/macboot.img http://mirrors.kernel.org/fedora/releases/28/Server/x86_64/os/images/macboot.img && rm -f /macboot.img
+
+
+# generate initrds before breaking fstab
 RUN bash -c 'for f in /boot/vmlinuz-*-generic ; do v="${f#/boot/vmlinuz-}" ; dracut -f "/boot/initrd.img-${v}" "${v}" ; done'
 
 # fstab _here_ does bind trickery
