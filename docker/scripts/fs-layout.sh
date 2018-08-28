@@ -470,7 +470,9 @@ ready_md () {
   wipefs -a "/dev/md/${mdname}"
   case "${fstyp}" in
     efi)  mkfs.vfat -F32 -nEFISP "/dev/md/${mdname}" ;;
-    ext2) mkfs.ext2 "/dev/md/${mdname}" ;;
+      # ext2 is special cased to create with the stupidest options for bootloader-ing
+      # you can always tune2fs and rethink your life later.
+    ext2) mkfs.ext2 -O none,ext_attr,resize_inode,dir_index,filetype,sparse_super "/dev/md/${mdname}" ;;
   esac
   if [ ! -z "${KS_INCLUDE}" ] ; then
     i=0 ; for part in ${mddev} ; do
@@ -526,6 +528,11 @@ ready_part () {
       lvmpv|bcache) : ;;
       efi)
         mkfs.vfat -F32 -nEFISP "${partition}"
+      ;;
+      # ext2 is special cased to create with the stupidest options for bootloader-ing
+      # you can always tune2fs and rethink your life later.
+      ext2)
+        mkfs.ext2 -O none,ext_attr,resize_inode,dir_index,filetype,sparse_super "${partition}"
       ;;
       *)
         "mkfs.${fstyp}" "${partition}"
