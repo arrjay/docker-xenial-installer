@@ -2,9 +2,10 @@ version: 2
 
 jobs:
   build:
+    build:
     docker:
-      - image: sandbox.docker.palantir.build/rbergeron/dind
-    working_directory: /project
+       - image: docker.palantir.build/circle2-build-images/ubuntu-jdk-npm:0.19.0
+    working_directory: ~/project
     environment:
       DOCKER_SINK=sandbox.docker.palantir.build/rbergeron
     steps:
@@ -15,7 +16,11 @@ jobs:
           command: ./build.sh
       - run:
           name: export to iso
-          command: ./make-iso.sh
+          command: |
+            docker create -v /workdir --name workdir alpine:3.4 /bin/true
+            docker run --volumes-from workdir build/xenial-installer
       - run:
           name: publish iso
-          command: ./publish.sh
+          command: |
+            docker cp workdir:/workdir/installercore.iso installercore.iso
+            ./publish.sh

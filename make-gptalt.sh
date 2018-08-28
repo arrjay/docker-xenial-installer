@@ -2,7 +2,7 @@
 
 set -ex
 
-docker run --rm=true docker.io/redjays/xenial-installer
+docker run --rm=true -v $(pwd):/workdir:Z ${DOCKER_SINK}/xenial-surrogate
 
 truncate -s3G boottest.img
 

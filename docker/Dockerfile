@@ -1,11 +1,19 @@
 FROM xenial-bootable
 
 # install selinux for writing rh images
+# note that installing selinux itself should be the _last_ thing you do as we explicitly break the grub-pc dep
 RUN dpkg-divert --rename /usr/sbin/update-grub && ln -s /bin/true /usr/sbin/update-grub && \
     dpkg-divert --rename /usr/sbin/update-selinux-policy && ln -s /bin/true /usr/sbin/update-selinux-policy && \
     apt-get -qq update && \
     env LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get -qq -y purge apparmor && \
-    env LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get -q -y install selinux pxz xorriso jq curl && \
+    env LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get --no-install-recommends install -q -y \
+     checkpolicy libapol4 libqpol1 policycoreutils \
+     python-ipy python-selinux python-semanage python-sepolgen python-sepolicy python-setools \
+     selinux-utils pxz xorriso jq curl gawk libsigsegv2 && \
+    env LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get download selinux selinux-policy-ubuntu && \
+    dpkg -i --ignore-depends=grub-pc /selinux_*.deb && \
+    dpkg -i /selinux-*.deb && \
+    rm -rf /selinux*.deb && \
     rm /usr/sbin/update-grub && dpkg-divert --rename --remove /usr/sbin/update-grub && \
     rm /usr/sbin/update-selinux-policy && dpkg-divert --rename --remove /usr/sbin/update-selinux-policy && \
     apt-get -q -y clean && rm -rf /var/lib/apt/lists/* && \
@@ -21,8 +29,22 @@ ADD fstab.sys /etc/fstab.sys
 ADD dracut-modules/livecd /usr/lib/dracut/modules.d/50livecd
 ADD dracut.conf /etc/dracut.conf
 
-# regenerate initrd before breaking fetab
-RUN bash -c 'for i in /boot/initrd.img* ; do v="${i#/boot/initrd.img-}" ; dracut -f "${i}" "${v}" ; done'
+# create EFI images and directories
+RUN truncate -s 12M /boot/efiboot.img && mkfs.vfat -F16 /boot/efiboot.img && \
+      mmd -i /boot/efiboot.img efi && mmd -i /boot/efiboot.img efi/boot && \
+      mcopy -i /boot/efiboot.img /usr/lib/shim/shimx64.efi.signed ::efi/boot/bootx64.efi && \
+      mcopy -i /boot/efiboot.img /usr/lib/grub/x86_64-efi-signed/gcdx64.efi.signed ::efi/boot/grubx64.efi && \
+      mcopy -i /boot/efiboot.img /usr/lib/grub/i386-efi/gcdia32.efi ::efi/boot/bootia32.efi && \
+      mmd -i /boot/efiboot.img efi/boot/i386-efi && mcopy -i /boot/efiboot.img /usr/lib/grub/i386-efi/*.mod ::efi/boot/i386-efi && \
+      mkdir -p /EFI/BOOT/i386-efi && cp /usr/lib/grub/i386-efi/*.mod /EFI/BOOT/i386-efi && \
+      echo "insmod linux" >> "/EFI/BOOT/grub.cfg" && echo "configfile /boot/grub/grub.cfg" >> "/EFI/BOOT/grub.cfg"
+
+## mac boot madness is just pilfered from fedora ;)
+RUN wget -o /boot/macboot.img http://mirrors.kernel.org/fedora/releases/28/Server/x86_64/os/images/macboot.img && rm -f /macboot.img
+
+
+# generate initrds before breaking fstab
+RUN bash -c 'for f in /boot/vmlinuz-*-generic ; do v="${f#/boot/vmlinuz-}" ; dracut -f "/boot/initrd.img-${v}" "${v}" ; done'
 
 # fstab _here_ does bind trickery
 ADD fstab /etc/fstab
@@ -46,7 +68,7 @@ ADD cloud.cfg.d/* /etc/cloud/cloud.cfg.d/
 RUN sed -i -e '/ - apt-.*/d' /etc/cloud/cloud.cfg
 
 # replace apparmor cache
-RUN rm -rf /etc/apparmor.d/cache && ln -sf /var/run/apparmor-cache /etc/apparmor.d/cache
+RUN mkdir -p /etc/apparmor.d && rm -rf /etc/apparmor.d/cache && ln -sf /var/run/apparmor-cache /etc/apparmor.d/cache
 
 # service to start a console on _any_ serial port
 ADD all-console-setup/addcons.service /etc/systemd/system/addcons.service

@@ -137,7 +137,7 @@ key2disk () {
 # return all disk devices _except_ the ones we booted from sans partitions
 # shellcheck disable=SC2120
 get_baseblocks() {
-  local dev shortdev candidates topdev results check value scratch blocks op
+  local dev shortdev candidates topdev results check value scratch blocks op scsiven
   check="" ; value="" ; results=""
 
   # we don't _require_ an argument (this is why we have the SC2120 exception)
@@ -162,6 +162,12 @@ get_baseblocks() {
 
     # filter out our installation/boot disk
     case "${installdisks}" in *"${topdev}"*) continue ;; esac
+
+    # silently filter out iODD/ZMVE Vendors
+    read -r scsiven < "/sys/class/block/${topdev}/device/vendor"
+    case "${scsiven}" in
+      iODD|ZMVE) continue ;;
+    esac
 
     # shortcut - if we already have a topdev we don't need to ask _again_
     case "${results}" in *"${topdev}"*) continue ;; esac
@@ -700,7 +706,7 @@ vgchange -a n || true
 stop_arrays
 
 # shellcheck disable=SC2119
-all_disks=$(get_baseblocks device/vendor!iODD)
+all_disks=$(get_baseblocks)
 disknr=$(count_words "${all_disks}")
 
 candidate_disks=""
