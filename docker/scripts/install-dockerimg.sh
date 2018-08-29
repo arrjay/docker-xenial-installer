@@ -69,7 +69,15 @@ mount -o bind /proc/ /mnt/sysimage/proc/
 mount -o bind /sys/ /mnt/sysimage/sys/
 mount -o bind /run/platform-info /mnt/sysimage/run/platform-info
 
-chroot /mnt/sysimage /bin/run-parts /scripts/grub-config
-chroot /mnt/sysimage /bin/run-parts /scripts/dracut-config
-chroot /mnt/sysimage passwd root
-chroot /mnt/sysimage /bin/run-parts /scripts/final-config
+[ -x /mnt/sysimage/bin/run-parts ]     && run_parts="/bin/run-parts"
+[ -x /mnt/sysimage/usr/bin/run-parts ] && run_parts="/usr/bin/run-parts"
+
+[ ! -z "${run_parts:-}" ] || { echo "cannot find run-parts in sysimage (bad unpack?)" 2>&1 ; exit 2 ; }
+
+for d in /scripts/dracut-config /scripts/grub-config /scripts/final-config ; do
+  if [ -d "/mnt/sysimage/$d" ] ; then
+    chroot /mnt/sysimage "$run_parts" "$d"
+  fi
+done
+
+#chroot /mnt/sysimage passwd root
