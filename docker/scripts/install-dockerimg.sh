@@ -68,6 +68,8 @@ mount -o bind /dev/ /mnt/sysimage/dev/
 mount -o bind /proc/ /mnt/sysimage/proc/
 mount -o bind /sys/ /mnt/sysimage/sys/
 mount -o bind /run/platform-info /mnt/sysimage/run/platform-info
+# try a bind mount of selinuxfs here?
+mount -t selinuxfs selinux /mnt/sysimage/selinux
 
 [ -x /mnt/sysimage/bin/run-parts ]     && run_parts="/bin/run-parts"
 [ -x /mnt/sysimage/usr/bin/run-parts ] && run_parts="/usr/bin/run-parts"
