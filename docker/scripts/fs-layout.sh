@@ -32,6 +32,9 @@ MD_COUNTER=0
 # file to record disks used for later grub shenanigans
 ENV_OUTPUT_FILE="/tmp/fs-layout.env"
 
+# actual filesystem type of EFI SP
+EFI_FSTYPE="vfat"
+
 cleanup () {
   rm -f "${FSTAB}"
 }
@@ -475,7 +478,10 @@ ready_md () {
   mdadm --create "/dev/md/${mdname}" -N"${mdname}" -l"${mdlevel}" -n "$(count_words "${mddev}")" --metadata="${datalevel}" ${mddev}
   wipefs -a "/dev/md/${mdname}"
   case "${fstyp}" in
-    efi)  mkfs.vfat -F32 -nEFISP "/dev/md/${mdname}" ;;
+    efi) case "${EFI_FSTYPE}" in
+           vfat)    mkfs.vfat    -F32 -n EFISP  "/dev/md/${mdname}" ;;
+           hfsplus) mkfs.hfsplus      -v EFISP "/dev/md/${mdname}" ;;
+         esac ;;
       # ext2 is special cased to create with the stupidest options for bootloader-ing
       # you can always tune2fs and rethink your life later.
     ext2) mkfs.ext2 -O none,ext_attr,resize_inode,dir_index,filetype,sparse_super "/dev/md/${mdname}" ;;
@@ -494,7 +500,7 @@ ready_md () {
   fi
   case "${fstyp}" in
     lvmpv|bcache) : ;;
-    efi)   printf '/dev/md/%s %s %s %s %s\n' "${mdname}" "${mpath}" "vfat" "${fs_opts}" "${fs_nos}" >> "${FSTAB}" ;;
+    efi)   printf '/dev/md/%s %s %s %s %s\n' "${mdname}" "${mpath}" "${EFI_FSTYPE}" "${fs_opts}" "${fs_nos}" >> "${FSTAB}" ;;
     *)     printf '/dev/md/%s %s %s %s %s\n' "${mdname}" "${mpath}" "${fstyp}" "${fs_opts}" "${fs_nos}" >> "${FSTAB}" ;;
   esac
   sleep 1
@@ -520,7 +526,7 @@ ready_part () {
   # always update fstab, though we may rewrite later.
   case "${fstyp}" in
     lvmpv|bcache) : ;;
-    efi)   printf '%s %s %s %s %s\n' "${partition}" "${mpath}" "vfat" "${fs_opts}" "${fs_nos}" >> "${FSTAB}" ;;
+    efi)   printf '%s %s %s %s %s\n' "${partition}" "${mpath}" "${EFI_FSTYPE}" "${fs_opts}" "${fs_nos}" >> "${FSTAB}" ;;
     *)     printf '%s %s %s %s %s\n' "${partition}" "${mpath}" "${fstyp}" "${fs_opts}" "${fs_nos}" >> "${FSTAB}" ;;
   esac
   if [ ! -z "${KS_INCLUDE}" ] ; then
@@ -533,7 +539,10 @@ ready_part () {
     case "${fstyp}" in
       lvmpv|bcache) : ;;
       efi)
-        mkfs.vfat -F32 -nEFISP "${partition}"
+        case "${EFI_FSTYPE}" in
+          vfat)    mkfs.vfat    -F32 -n EFISP "${partition}" ;;
+          hfsplus) mkfs.hfsplus      -v EFISP "${partition}" ;;
+        esac
       ;;
       # ext2 is special cased to create with the stupidest options for bootloader-ing
       # you can always tune2fs and rethink your life later.
@@ -545,7 +554,7 @@ ready_part () {
       ;;
     esac
     # handle efi for the next bit..
-    case "${fstyp}" in efi) fstyp="vfat" ;; esac
+    case "${fstyp}" in efi) fstyp="${EFI_FSTYPE}" ;; esac
     # rewrite fstab with UUID now.
     # shellcheck disable=SC2015
     grep -q "${partition}" "${FSTAB}" && {
@@ -606,6 +615,10 @@ parted () {
 
 mkfs.vfat () {
   if [ "${NOOP}" -eq 0 ] ; then command mkfs.vfat "${@}" ; else echo "mkfs.vfat" "${@}" 1>&3 ; fi
+}
+
+mkfs.hfsplus () {
+  if [ "${NOOP}" -eq 0 ] ; then command mkfs.hfsplus "${@}" ; else echo "mkfs.hfsplus" "${@}" 1>&3 ; fi
 }
 
 mkfs.ext2 () {
@@ -669,6 +682,13 @@ luks_open () {
 }
 
 parse_opts "${@}"
+
+# determine EFI partition FS
+hfsplusefi_syswords=( 'product_name_words/macmini2,1' )
+
+for w in "${hfsplusefi_syswords[@]}" ; do
+  [ -e "/run/platform-info/${w}" ] && EFI_FSTYPE="hfsplus"
+done
 
 # get rootdisk, and the repodisk if there
 repodisk=$(key2disk 'MOUNTPOINT="/run/install/repo"')
