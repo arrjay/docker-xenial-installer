@@ -312,8 +312,15 @@ partition_disk () {
   # EFI system partition
   {
     pstart=1 ; while [ $((pstart * chunk)) -lt "${biosend}" ] ; do pstart=$((pstart + 1)) ; done ; pstart=$((pstart + 1))
-    parted -a optimal "${disk}" mkpart '"EFI System Partition"' "$((pstart * chunk))s" 300MB && partition=$((partition + 1))
-    parted "${disk}" toggle "${partition}" boot
+    case "${EFI_FSTYPE}" in
+      hfsplus)
+        parted -a optimal "${disk}" mkpart '"EFI System Partition"' hfs+ "$((pstart * chunk))s" 300MB && partition=$((partition + 1))
+      ;;
+      *)
+        parted -a optimal "${disk}" mkpart '"EFI System Partition"' "$((pstart * chunk))s" 300MB && partition=$((partition + 1))
+        parted "${disk}" toggle "${partition}" boot
+      ;;
+    esac
   } > /dev/null 2>&1
   echo "efiboot=${disk}${partition}"
 
