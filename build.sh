@@ -2,8 +2,8 @@
 
 set -ex
 
-[ -z "${NOPUSH}" ] && docker pull "${DOCKER_SINK}/xenial-bootable"
-docker tag  "${DOCKER_SINK}/xenial-bootable" "xenial-bootable"
+[ -z "${NOPUSH}" ] && docker pull "${DOCKER_SINK}/ubuntu-16.04-vm-bootable"
+docker tag  "${DOCKER_SINK}/ubuntu-16.04-vm-bootable" "xenial-bootable"
 
 set -u
 

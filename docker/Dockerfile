@@ -7,12 +7,12 @@ RUN dpkg-divert --rename /usr/sbin/update-grub && ln -s /bin/true /usr/sbin/upda
     apt-get -qq update && \
     env LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get -qq -y purge apparmor && \
     env LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get --no-install-recommends install -q -y \
-     checkpolicy libapol4 libqpol1 policycoreutils gdisk \
+     checkpolicy libapol4 libqpol1 policycoreutils gdisk dosfstools mtools \
      python-ipy python-selinux python-semanage python-sepolgen python-sepolicy python-setools \
      selinux-utils pxz xorriso jq curl gawk libsigsegv2 && \
     env LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get download selinux selinux-policy-ubuntu && \
-    dpkg -i --ignore-depends=grub-pc /selinux_*.deb && \
-    dpkg -i /selinux-*.deb && \
+    dpkg -i --ignore-depends=grub-pc,initramfs-tools /selinux_*.deb && \
+    dpkg -i --ignore-depends=grub-pc,initramfs-tools /selinux-*.deb && \
     rm -rf /selinux*.deb && \
     rm /usr/sbin/update-grub && dpkg-divert --rename --remove /usr/sbin/update-grub && \
     rm /usr/sbin/update-selinux-policy && dpkg-divert --rename --remove /usr/sbin/update-selinux-policy && \
@@ -34,14 +34,8 @@ RUN truncate -s 12M /boot/efiboot.img && mkfs.vfat -F16 /boot/efiboot.img && \
       mmd -i /boot/efiboot.img efi && mmd -i /boot/efiboot.img efi/boot && \
       mcopy -i /boot/efiboot.img /usr/lib/shim/shimx64.efi.signed ::efi/boot/bootx64.efi && \
       mcopy -i /boot/efiboot.img /usr/lib/grub/x86_64-efi-signed/gcdx64.efi.signed ::efi/boot/grubx64.efi && \
-      mcopy -i /boot/efiboot.img /usr/lib/grub/i386-efi/gcdia32.efi ::efi/boot/bootia32.efi && \
-      mmd -i /boot/efiboot.img efi/boot/i386-efi && mcopy -i /boot/efiboot.img /usr/lib/grub/i386-efi/*.mod ::efi/boot/i386-efi && \
-      mkdir -p /EFI/BOOT/i386-efi && cp /usr/lib/grub/i386-efi/*.mod /EFI/BOOT/i386-efi && \
+      mkdir -p /EFI/BOOT && \
       echo "insmod linux" >> "/EFI/BOOT/grub.cfg" && echo "configfile /boot/grub/grub.cfg" >> "/EFI/BOOT/grub.cfg"
-
-## mac boot madness is just pilfered from fedora ;)
-RUN wget -o /boot/macboot.img http://mirrors.kernel.org/fedora/releases/28/Server/x86_64/os/images/macboot.img && rm -f /macboot.img
-
 
 # generate initrds before breaking fstab
 RUN bash -c 'for f in /boot/vmlinuz-*-generic ; do v="${f#/boot/vmlinuz-}" ; dracut -f "/boot/initrd.img-${v}" "${v}" ; done'
@@ -61,7 +55,6 @@ RUN tar cpf /cdroot/var.tar  -C /var .  && pxz /cdroot/var.tar  && \
     tar cpf /cdroot/ssh.tar  -C /etc/ssh '--exclude=ssh_host*' . && \
      pxz /cdroot/ssh.tar && \
     rm -rf /var /home /etc/ssh
-
 
 # override cloud.d resize module
 ADD cloud.cfg.d/* /etc/cloud/cloud.cfg.d/
@@ -84,7 +77,7 @@ RUN ln -sf /dev/null /etc/tmpfiles.d/home.conf && ln -sf ../proc/self/mounts /cd
 
 # tpl files for iso9660 booting and copy kernel/initrd to /isolinux
 # isoloinux doesn't do symlinks
-RUN bash -c 'd="" ; c="/isolinux/syslinux.cfg" ; g="/boot/grub/grub.cfg" ; \
+RUN bash -c 'mkdir -p /isolinux ; d="" ; c="/isolinux/syslinux.cfg" ; g="/boot/grub/grub.cfg" ; \
              a="console=tty0 root=LABEL=xe_installer memhp_default_state=offline security=selinux selinux=1 enforcing=0 intel_iommu=on iommu=pt iommu=1 rw" ; \
              { echo "timeout 900" ; echo "prompt 1"; } > "${c}" ; \
              for i in /boot/initrd.img* ; do \
