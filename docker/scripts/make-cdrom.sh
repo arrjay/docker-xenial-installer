@@ -24,7 +24,6 @@ xorriso --report_about HINT -as xorrisofs -U -A xe_installer -V xe_installer -vo
   -b isolinux/isolinux.bin -c boot/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table \
   -isohybrid-mbr "/isolinux/isohdpfx.bin" --protective-msdos-label \
   -eltorito-alt-boot -e /boot/efiboot.img -no-emul-boot -isohybrid-gpt-basdat \
-  -eltorito-alt-boot -e /boot/macboot.img -no-emul-boot -isohybrid-gpt-basdat -isohybrid-apm-hfsplus \
   "/cdroot" -- \
   -zisofs level=9:block_size=128k set_filter_r --zisofs /bin /etc /lib /opt /root /sbin /scripts /usr -- \
   -chmodi u+s /usr/bin/sudo --
