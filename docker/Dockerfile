@@ -7,7 +7,7 @@ RUN dpkg-divert --rename /usr/sbin/update-grub && ln -s /bin/true /usr/sbin/upda
     apt-get -qq update && \
     env LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get -qq -y purge apparmor && \
     env LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get --no-install-recommends install -q -y \
-     checkpolicy libapol4 libqpol1 policycoreutils gdisk dosfstools mtools \
+     checkpolicy libapol4 libqpol1 policycoreutils gdisk dosfstools mtools syslinux-common isolinux \
      python-ipy python-selinux python-semanage python-sepolgen python-sepolicy python-setools \
      selinux-utils pxz xorriso jq curl gawk libsigsegv2 && \
     env LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get download selinux selinux-policy-ubuntu && \
@@ -74,6 +74,11 @@ ADD pam-login /etc/pam.d/login
 # update tmpfiles.d
 ADD tmpfiles.d/* /etc/tmpdiles.d
 RUN ln -sf /dev/null /etc/tmpfiles.d/home.conf && ln -sf ../proc/self/mounts /cdroot/etc/mtab
+
+# pack up isolinux for cd
+RUN mkdir /isolinux && cp /usr/lib/ISOLINUX/isolinux.bin /isolinux/isolinux.bin && \
+                       cp /usr/lib/syslinux/modules/bios/*.c32 /isolinux && \
+                       cp /usr/lib/ISOLINUX/isohd*.bin /isolinux
 
 # tpl files for iso9660 booting and copy kernel/initrd to /isolinux
 # isoloinux doesn't do symlinks
