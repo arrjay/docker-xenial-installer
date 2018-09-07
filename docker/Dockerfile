@@ -7,7 +7,7 @@ RUN dpkg-divert --rename /usr/sbin/update-grub && ln -s /bin/true /usr/sbin/upda
     apt-get -qq update && \
     env LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get -qq -y purge apparmor && \
     env LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get --no-install-recommends install -q -y \
-     sudo \
+     sudo parted rsync \
      checkpolicy libapol4 libqpol1 policycoreutils gdisk dosfstools mtools syslinux-common isolinux syslinux-utils \
      python-ipy python-selinux python-semanage python-sepolgen python-sepolicy python-setools \
      selinux-utils pxz xorriso jq curl gawk libsigsegv2 && \
