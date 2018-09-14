@@ -73,7 +73,7 @@ RUN ln -s /etc/systemd/system/addcons.service /etc/systemd/system/multi-user.tar
 ADD pam-login /etc/pam.d/login
 
 # update tmpfiles.d
-ADD tmpfiles.d/* /etc/tmpdiles.d
+ADD tmpfiles.d/* /etc/tmpfiles.d
 RUN ln -sf /dev/null /etc/tmpfiles.d/home.conf && ln -sf ../proc/self/mounts /cdroot/etc/mtab
 
 # pack up isolinux for cd
