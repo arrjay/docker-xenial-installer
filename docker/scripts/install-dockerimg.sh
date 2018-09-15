@@ -60,6 +60,8 @@ for l in $(curl -sS -u 'anonymous:' "https://${HOST}/v2/${IMAGE}/manifests/${TAG
   done
 done
 
+rm -f /mnt/sysimage/etc/mtab && ln -sf ../proc/self/mounts /mnt/sysimage/etc/mtab
+
 mkdir -p /mnt/sysimage/run/platform-info
 
 rsync -av /tmp/overlay/ /mnt/sysimage/
